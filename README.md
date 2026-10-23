@@ -31,4 +31,4 @@ Open http://localhost:3000 in your browser.
  
 ---
 
- const SERVER = 'https://scavenger-hunt-game-production.up.railway.app';
+ ```const SERVER = 'https://scavenger-hunt-game-production.up.railway.app';
