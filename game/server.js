@@ -8,6 +8,7 @@ require('dotenv').config();
 const express = require('express');
 const cors    = require('cors');
 const path    = require('path');
+const fs = require('fs');
 
 // ══════════════════════════════════════════════
 // API key is loaded from .env file — never
@@ -111,13 +112,16 @@ app.post('/hint', async (req, res) => {
     `First ask: subtle nudge only. Second+ ask: progressively more direct. ` +
     `Never reveal the full answer on the very first ask.`;
 
-  const url =
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${GEMINI_API_KEY}`;
+const url =
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent`;
 
   try {
     const geminiRes = await fetch(url, {
       method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'x-goog-api-key': (GEMINI_API_KEY || '').trim()
+      },
       body: JSON.stringify({
         system_instruction: { parts: [{ text: systemPrompt }] },
         contents: [{ role: 'user', parts: [{ text: message }] }],
@@ -142,6 +146,54 @@ app.post('/hint', async (req, res) => {
   }
 });
 
+
+// ── Leaderboard (Saved to leaderboard.json) ──────────────────
+const LEADERBOARD_FILE = path.join(__dirname, 'leaderboard.json');
+
+function getLeaderboard() {
+  try {
+    if (fs.existsSync(LEADERBOARD_FILE)) {
+      return JSON.parse(fs.readFileSync(LEADERBOARD_FILE, 'utf8'));
+    }
+  } catch (e) {
+    console.error('Error reading leaderboard:', e.message);
+  }
+  return [];
+}
+
+// GET /leaderboard → Returns top 10 fastest players
+app.get('/leaderboard', (req, res) => {
+  const board = getLeaderboard();
+  res.json(board.slice(0, 10));
+});
+
+// POST /leaderboard → { name: "Faisal", timeSeconds: 145, formattedTime: "02:25" }
+app.post('/leaderboard', (req, res) => {
+  const { name, timeSeconds, formattedTime } = req.body;
+
+  if (typeof name !== 'string' || !name.trim() || typeof timeSeconds !== 'number') {
+    return res.status(400).json({ error: 'Invalid score submission.' });
+  }
+
+  const cleanName = name.trim().slice(0, 20); // Max 20 characters
+  const board = getLeaderboard();
+
+  board.push({
+    name: cleanName,
+    timeSeconds,
+    formattedTime: formattedTime || `${timeSeconds}s`,
+    date: new Date().toISOString()
+  });
+
+  // Sort fastest (lowest timeSeconds) first
+  board.sort((a, b) => a.timeSeconds - b.timeSeconds);
+
+  // Save top 50 scores to leaderboard.json
+  const topScores = board.slice(0, 50);
+  fs.writeFileSync(LEADERBOARD_FILE, JSON.stringify(topScores, null, 2));
+
+  res.json({ leaderboard: topScores.slice(0, 10) });
+});
 
 // ── Start ────────────────────────────────────────
 app.listen(PORT, () => {

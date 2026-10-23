@@ -230,7 +230,7 @@ Enter the 4-digit code you find.`,
   // When running locally:   http://localhost:3000
   // When deployed:          https://your-app.railway.app
   // ════════════════════════════════════════════
-  const SERVER = 'https://scavenger-hunt-game-production.up.railway.app';
+  const SERVER = '';
   // ════════════════════════════════════════════
   </script>
   <!-- ════════════════════════════════════════
@@ -336,7 +336,15 @@ Enter the 4-digit code you find.`,
       </div>
       <p class="win-msg">All checkpoints cleared. You've proven you can navigate real systems, read real hardware, and find what others miss. Welcome to the <span id="win-club"></span>.</p>
       <p class="win-msg">Take a screenshot of this and show to SESS Executives in the SESS room.</p>
-      <button class="btn btn-primary" onclick="restartGame()">$ ./restart.sh</button>
+
+      <!-- ▼▼▼ PLACED SAFELY INSIDE THE WIN SCREEN WRAPPER ▼▼▼ -->
+      <div style="margin-top: 20px; padding: 12px; border: 1px dashed #00ff88; font-family: monospace; text-align: left; background: rgba(0, 255, 136, 0.03);">
+        <h3 style="margin-top: 0; color: #00ff88; font-size: 1em;">🏆 TOP DEPLOYMENT TIMES</h3>
+        <div id="leaderboard-list">// waiting for deployment completion...</div>
+      </div>
+      <!-- ▲▲▲ ▲▲▲ ▲▲▲ ▲▲▲ ▲▲▲ ▲▲▲ ▲▲▲ ▲▲▲ ▲▲▲ ▲▲▲ ▲▲▲ ▲▲▲ -->
+
+      <button class="btn btn-primary" onclick="restartGame()" style="margin-top: 15px;">$ ./restart.sh</button>
     </div>
   </div>
 
@@ -345,185 +353,240 @@ Enter the 4-digit code you find.`,
 
 <script>
 /* ─── State ── */
-let stage=0, player='', startTime=null, timerHnd=null, wrongs=0;
+let stage = 0, player = '', startTime = null, timerHnd = null, wrongs = 0;
+let finalGameSecs = 0, finalGameFmt = '00:00';
 
 /* ─── Init ── */
-document.getElementById('logo-sub-text').textContent = '// '+CLUB_NAME+' //';
-document.getElementById('logo-ver-text').textContent = 'STAGES: '+STAGES.length+' // '+TAGLINE;
-document.getElementById('player-name').addEventListener('keydown',e=>{if(e.key==='Enter')startGame()});
+document.getElementById('logo-sub-text').textContent = '// ' + CLUB_NAME + ' //';
+document.getElementById('logo-ver-text').textContent = 'STAGES: ' + STAGES.length + ' // ' + TAGLINE;
+document.getElementById('player-name').addEventListener('keydown', e => { if (e.key === 'Enter') startGame(); });
 
 // Ping server on load to confirm it's reachable
-fetch(SERVER+'/stages')
-  .then(r=>r.json())
-  .then(d=>{ document.getElementById('srv-status').textContent = d.count+'/'+d.count+' NODES VERIFIED'; })
-  .catch(()=>{ document.getElementById('srv-status').textContent = 'OFFLINE'; document.getElementById('srv-status').className='err'; });
+fetch(SERVER + '/stages')
+  .then(r => r.json())
+  .then(d => { document.getElementById('srv-status').textContent = d.count + '/' + d.count + ' NODES VERIFIED'; })
+  .catch(() => { document.getElementById('srv-status').textContent = 'OFFLINE'; document.getElementById('srv-status').className = 'err'; });
 
 /* ─── Helpers ── */
-function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active')}
-function fmt(s){return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')}
-function elapsed(){return Math.floor((Date.now()-startTime)/1000)}
+function show(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+function fmt(s) { return String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0'); }
+function elapsed() { return Math.floor((Date.now() - startTime) / 1000); }
 
-function typewrite(el,text,speed=35){
-  el.textContent='';el.classList.add('tw');let i=0;
-  const iv=setInterval(()=>{if(i<text.length){el.textContent+=text[i++]}else{clearInterval(iv);el.classList.remove('tw')}},speed);
+function typewrite(el, text, speed = 35) {
+  el.textContent = ''; el.classList.add('tw'); let i = 0;
+  const iv = setInterval(() => { if (i < text.length) { el.textContent += text[i++]; } else { clearInterval(iv); el.classList.remove('tw'); } }, speed);
 }
 
-function burst(x,y,color='#00ff88'){
-  for(let i=0;i<20;i++){
-    const p=document.createElement('div');p.className='particle';
-    const ang=(i/20)*Math.PI*2,dist=35+Math.random()*65;
-    p.style.cssText=`left:${x}px;top:${y}px;width:${2+Math.random()*5}px;height:${2+Math.random()*5}px;background:${color};--dx:${Math.cos(ang)*dist}px;--dy:${Math.sin(ang)*dist}px;`;
-    document.body.appendChild(p);setTimeout(()=>p.remove(),900);
+function burst(x, y, color = '#00ff88') {
+  for (let i = 0; i < 20; i++) {
+    const p = document.createElement('div'); p.className = 'particle';
+    const ang = (i / 20) * Math.PI * 2, dist = 35 + Math.random() * 65;
+    p.style.cssText = `left:${x}px;top:${y}px;width:${2 + Math.random() * 5}px;height:${2 + Math.random() * 5}px;background:${color};--dx:${Math.cos(ang) * dist}px;--dy:${Math.sin(ang) * dist}px;`;
+    document.body.appendChild(p); setTimeout(() => p.remove(), 900);
   }
 }
 
 /* ─── Game flow ── */
-function startGame(){
-  const n=document.getElementById('player-name').value.trim();
-  if(!n){document.getElementById('player-name').focus();return}
-  player=n;stage=0;wrongs=0;startTime=Date.now();
+function startGame() {
+  const n = document.getElementById('player-name').value.trim();
+  if (!n) { document.getElementById('player-name').focus(); return; }
+  player = n; stage = 0; wrongs = 0; startTime = Date.now();
   clearInterval(timerHnd);
-  timerHnd=setInterval(()=>document.getElementById('timer').textContent=fmt(elapsed()),1000);
-  show('screen-game');renderStage();
+  timerHnd = setInterval(() => document.getElementById('timer').textContent = fmt(elapsed()), 1000);
+  show('screen-game'); renderStage();
 }
 
-function renderStage(){
-  const s=STAGES[stage];
-  const pct=Math.round((stage/STAGES.length)*100);
-  document.getElementById('hud-name').textContent=player.toLowerCase();
-  document.getElementById('hud-agent-small').textContent=player.toLowerCase();
-  document.getElementById('hud-pill').textContent='TASK '+String(stage+1).padStart(2,'0')+' / '+String(STAGES.length).padStart(2,'0');
-  document.getElementById('prog-fill').style.width=pct+'%';
-  document.getElementById('prog-pct').textContent=pct+'%';
-  document.getElementById('card-loc').textContent=s.location;
-  document.getElementById('card-file').textContent='TASK_'+String(stage+1).padStart(3,'0')+'.sh';
-  document.getElementById('task-num').textContent='TASK_'+String(stage+1).padStart(3,'0');
-  document.getElementById('ctx-text').textContent=s.context;
-  document.getElementById('challenge-text').textContent=s.challenge;
-  document.getElementById('answer-input').value='';
-  document.getElementById('feedback').style.display='none';
-  wrongs=0;
-  typewrite(document.getElementById('task-title'),s.title.toUpperCase(),40);
-  buildTrack();resetChat();
+function renderStage() {
+  const s = STAGES[stage];
+  const pct = Math.round((stage / STAGES.length) * 100);
+  document.getElementById('hud-name').textContent = player.toLowerCase();
+  document.getElementById('hud-agent-small').textContent = player.toLowerCase();
+  document.getElementById('hud-pill').textContent = 'TASK ' + String(stage + 1).padStart(2, '0') + ' / ' + String(STAGES.length).padStart(2, '0');
+  document.getElementById('prog-fill').style.width = pct + '%';
+  document.getElementById('prog-pct').textContent = pct + '%';
+  document.getElementById('card-loc').textContent = s.location;
+  document.getElementById('card-file').textContent = 'TASK_' + String(stage + 1).padStart(3, '0') + '.sh';
+  document.getElementById('task-num').textContent = 'TASK_' + String(stage + 1).padStart(3, '0');
+  document.getElementById('ctx-text').textContent = s.context;
+  document.getElementById('challenge-text').textContent = s.challenge;
+  document.getElementById('answer-input').value = '';
+  document.getElementById('feedback').style.display = 'none';
+  wrongs = 0;
+  typewrite(document.getElementById('task-title'), s.title.toUpperCase(), 40);
+  buildTrack(); resetChat();
 }
 
-function buildTrack(){
-  document.getElementById('stage-track').innerHTML=STAGES.map((s,i)=>{
-    let c='stage-seg';if(i<stage)c+=' done';if(i===stage)c+=' active';
-    return `<div class="${c}"><div class="stage-node">${i<stage?'✓':s.icon}</div><div class="stage-lbl">${s.title}</div></div>`;
+function buildTrack() {
+  document.getElementById('stage-track').innerHTML = STAGES.map((s, i) => {
+    let c = 'stage-seg'; if (i < stage) c += ' done'; if (i === stage) c += ' active';
+    return `<div class="${c}"><div class="stage-node">${i < stage ? '✓' : s.icon}</div><div class="stage-lbl">${s.title}</div></div>`;
   }).join('');
 }
 
-/* ─────────────────────────────────────────────────
-   checkAnswer — posts to server, never checks
-   locally. The answer is never in this file.
-───────────────────────────────────────────────── */
-async function checkAnswer(){
-  const raw=document.getElementById('answer-input').value.trim();
-  if(!raw) return;
-  const fb=document.getElementById('feedback');
-  const btn=document.getElementById('submit-btn');
+async function checkAnswer() {
+  const raw = document.getElementById('answer-input').value.trim();
+  if (!raw) return;
+  const fb = document.getElementById('feedback');
+  const btn = document.getElementById('submit-btn');
 
-  // Disable while waiting for server
-  btn.disabled=true;
-  btn.textContent='CHECKING...';
-  fb.style.display='none';
+  btn.disabled = true;
+  btn.textContent = 'CHECKING...';
+  fb.style.display = 'none';
 
   try {
-    const res  = await fetch(SERVER+'/check', {
-      method:  'POST',
-      headers: {'Content-Type':'application/json'},
-      body:    JSON.stringify({ stage, answer: raw })
+    const res = await fetch(SERVER + '/check', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ stage, answer: raw })
     });
 
-    if(res.status===429){
-      fb.className='feedback wrong';fb.style.display='block';
-      fb.textContent='✗ RATE LIMIT — too many attempts. Wait and retry.';
+    if (res.status === 429) {
+      fb.className = 'feedback wrong'; fb.style.display = 'block';
+      fb.textContent = '✗ RATE LIMIT — too many attempts. Wait and retry.';
       return;
     }
 
     const data = await res.json();
 
-    if(data.correct){
-      fb.className='feedback right';fb.style.display='block';
-      fb.textContent='✓ ACCEPTED — checkpoint cleared. Advancing...';
-      const r=btn.getBoundingClientRect();
-      burst(r.left+r.width/2,r.top+r.height/2,'#00ff88');
-      setTimeout(()=>{stage++;if(stage>=STAGES.length)finishGame();else renderStage()},1300);
+    if (data.correct) {
+      fb.className = 'feedback right'; fb.style.display = 'block';
+      fb.textContent = '✓ ACCEPTED — checkpoint cleared. Advancing...';
+      const r = btn.getBoundingClientRect();
+      burst(r.left + r.width / 2, r.top + r.height / 2, '#00ff88');
+      
+      setTimeout(() => {
+        if (stage >= STAGES.length - 1) {
+          finishGame();
+        } else {
+          stage++;
+          renderStage();
+        }
+      }, 1300);
     } else {
       wrongs++;
-      fb.className='feedback wrong';fb.style.display='block';
-      fb.textContent=wrongs>=3?'✗ REJECTED — query your pair programmer below.':'✗ REJECTED — re-examine the environment.';
-      const r=document.getElementById('answer-input').getBoundingClientRect();
-      burst(r.left+r.width/2,r.top+r.height/2,'#ff4466');
+      fb.className = 'feedback wrong'; fb.style.display = 'block';
+      fb.textContent = wrongs >= 3 ? '✗ REJECTED — query your pair programmer below.' : '✗ REJECTED — re-examine the environment.';
+      const r = document.getElementById('answer-input').getBoundingClientRect();
+      burst(r.left + r.width / 2, r.top + r.height / 2, '#ff4466');
     }
-  } catch(e){
-    fb.className='feedback wrong';fb.style.display='block';
-    fb.textContent='✗ SERVER UNREACHABLE — check your connection.';
+  } catch (e) {
+    fb.className = 'feedback wrong'; fb.style.display = 'block';
+    fb.textContent = '✗ SERVER UNREACHABLE — check your connection.';
   } finally {
-    btn.disabled=false;
-    btn.textContent='RUN ▶';
+    btn.disabled = false;
+    btn.textContent = 'RUN ▶';
   }
 }
 
-document.addEventListener('keydown',e=>{
-  if(e.key==='Enter'&&document.getElementById('screen-game').classList.contains('active')&&document.activeElement===document.getElementById('answer-input'))
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && document.getElementById('screen-game').classList.contains('active') && document.activeElement === document.getElementById('answer-input'))
     checkAnswer();
 });
 
-function finishGame(){
-  clearInterval(timerHnd);const secs=elapsed();
-  document.getElementById('win-handle').textContent='// '+player.toLowerCase()+' //';
-  document.getElementById('win-time').textContent=fmt(secs);
-  document.getElementById('win-stages').textContent=STAGES.length+'/'+STAGES.length;
-  document.getElementById('win-club').textContent=CLUB_NAME;
-  setTimeout(()=>{for(let i=0;i<8;i++)setTimeout(()=>burst(window.innerWidth*0.2+Math.random()*window.innerWidth*0.6,window.innerHeight*0.2+Math.random()*window.innerHeight*0.5,['#00ff88','#00e5ff','#ffb800'][Math.floor(Math.random()*3)]),i*100)},300);
+function finishGame() {
+  clearInterval(timerHnd); 
+  finalGameSecs = elapsed();
+  finalGameFmt = fmt(finalGameSecs);
+  
+  document.getElementById('win-handle').textContent = '// ' + player.toLowerCase() + ' //';
+  document.getElementById('win-time').textContent = finalGameFmt;
+  document.getElementById('win-stages').textContent = STAGES.length + '/' + STAGES.length;
+  document.getElementById('win-club').textContent = CLUB_NAME;
+  
+  setTimeout(() => { for (let i = 0; i < 8; i++) setTimeout(() => burst(window.innerWidth * 0.2 + Math.random() * window.innerWidth * 0.6, window.innerHeight * 0.2 + Math.random() * window.innerHeight * 0.5, ['#00ff88', '#00e5ff', '#ffb800'][Math.floor(Math.random() * 3)]), i * 100); }, 300);
+  
   show('screen-win');
+  autoSubmitScore(player || 'Anonymous', finalGameSecs, finalGameFmt);
 }
 
-function restartGame(){clearInterval(timerHnd);document.getElementById('player-name').value='';show('screen-intro')}
+function restartGame() { clearInterval(timerHnd); document.getElementById('player-name').value = ''; show('screen-intro'); }
 
 /* ─── Chat ── */
-function resetChat(){
-  const box=document.getElementById('chat-msgs');box.innerHTML='';
-  const d=document.createElement('div');d.className='msg bot';
-  d.innerHTML=`<span class="sender">AI_PAIR_PROGRAMMER</span>Connected to ${STAGES[stage].title} node. Ask me for a hint if you're stuck.`;
+function resetChat() {
+  const box = document.getElementById('chat-msgs'); box.innerHTML = '';
+  const d = document.createElement('div'); d.className = 'msg bot';
+  d.innerHTML = `<span class="sender">AI_PAIR_PROGRAMMER</span>Connected to ${STAGES[stage].title} node. Ask me for a hint if you're stuck.`;
   box.appendChild(d);
 }
-function addMsg(role,text,sender=''){
-  const box=document.getElementById('chat-msgs');
-  const d=document.createElement('div');d.className='msg '+role;
-  if(sender)d.innerHTML=`<span class="sender">${sender}</span>${text}`;
-  else d.textContent=text;
-  box.appendChild(d);box.scrollTop=9999;return d;
+function addMsg(role, text, sender = '') {
+  const box = document.getElementById('chat-msgs');
+  const d = document.createElement('div'); d.className = 'msg ' + role;
+  if (sender) d.innerHTML = `<span class="sender">${sender}</span>${text}`;
+  else d.textContent = text;
+  box.appendChild(d); box.scrollTop = 9999; return d;
 }
 
-async function sendHint(){
-  const inp=document.getElementById('chat-input');
-  const txt=inp.value.trim();if(!txt)return;
-  inp.value='';addMsg('user',txt);
-  const loader=addMsg('bot','','AI_PAIR_PROGRAMMER');
-  loader.innerHTML=`<span class="sender">AI_PAIR_PROGRAMMER</span><span class="thinking">// compiling hint...</span>`;
-  const s=STAGES[stage];
-  try{
-    // Calls our own server — Gemini API key never exposed to browser
-    const res=await fetch(SERVER+'/hint',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
+async function sendHint() {
+  const inp = document.getElementById('chat-input');
+  const txt = inp.value.trim(); if (!txt) return;
+  inp.value = ''; addMsg('user', txt);
+  const loader = addMsg('bot', '', 'AI_PAIR_PROGRAMMER');
+  loader.innerHTML = `<span class="sender">AI_PAIR_PROGRAMMER</span><span class="thinking">// compiling hint...</span>`;
+  const s = STAGES[stage];
+  try {
+    const res = await fetch(SERVER + '/hint', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
         stage,
-        message:       txt,
-        stageTitle:    s.title,
+        message: txt,
+        stageTitle: s.title,
         stageLocation: s.location,
-        hintContext:   s.hint_context
+        hintContext: s.hint_context
       })
     });
-    const data=await res.json();
-    loader.innerHTML=`<span class="sender">AI_PAIR_PROGRAMMER</span>${data.reply}`;
-  }catch(e){
-    loader.innerHTML=`<span class="sender">AI_PAIR_PROGRAMMER</span>// connection timeout. examine the environment.`;
+    const data = await res.json();
+    loader.innerHTML = `<span class="sender">AI_PAIR_PROGRAMMER</span>${data.reply}`;
+  } catch (e) {
+    loader.innerHTML = `<span class="sender">AI_PAIR_PROGRAMMER</span>// connection timeout. examine the environment.`;
   }
-  document.getElementById('chat-msgs').scrollTop=9999;
+  document.getElementById('chat-msgs').scrollTop = 9999;
+}
+
+/* ─── Leaderboard integration ── */
+async function autoSubmitScore(name, timeSeconds, formattedTime) {
+  try {
+    const res = await fetch(SERVER + '/leaderboard', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, timeSeconds, formattedTime })
+    });
+    const data = await res.json();
+    renderLeaderboard(data.leaderboard || data);
+  } catch (e) {
+    console.error('Could not auto-save score:', e);
+    document.getElementById('leaderboard-list').innerHTML = '// leaderboard offline.';
+  }
+}
+
+async function loadLeaderboard() {
+  try {
+    const res = await fetch(SERVER + '/leaderboard');
+    const board = await res.json();
+    renderLeaderboard(board);
+  } catch (e) {
+    console.error('Could not load leaderboard:', e);
+  }
+}
+
+function renderLeaderboard(board) {
+  const container = document.getElementById('leaderboard-list');
+  if (!container) return;
+
+  if (!board || board.length === 0) {
+    container.innerHTML = '<div>// no deployments recorded yet.</div>';
+    return;
+  }
+
+  container.innerHTML = board.map((entry, index) => `
+    <div style="display:flex; justify-content:space-between; padding:4px 0; border-bottom:1px solid #1e293b; font-size: 0.9em;">
+      <span>#${index + 1} &nbsp;${entry.name}</span>
+      <span style="color: #00ff88;">${entry.formattedTime}</span>
+    </div>
+  `).join('');
 }
 </script>
 </body>
