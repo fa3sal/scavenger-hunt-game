@@ -356,6 +356,9 @@ Enter the 4-digit code you find.`,
 let stage = 0, player = '', startTime = null, timerHnd = null, wrongs = 0;
 let finalGameSecs = 0, finalGameFmt = '00:00';
 
+// prevents spamming answer
+let isTransitioning = false
+
 /* ─── Init ── */
 document.getElementById('logo-sub-text').textContent = '// ' + CLUB_NAME + ' //';
 document.getElementById('logo-ver-text').textContent = 'STAGES: ' + STAGES.length + ' // ' + TAGLINE;
@@ -391,6 +394,7 @@ function burst(x, y, color = '#00ff88') {
 
 /* ─── Game flow ── */
 function startGame() {
+  isTransitioning = false;
   const n = document.getElementById('player-name').value.trim();
   if (!n) { document.getElementById('player-name').focus(); return; }
   player = n; stage = 0; wrongs = 0; startTime = Date.now();
@@ -427,11 +431,17 @@ function buildTrack() {
 }
 
 async function checkAnswer() {
-  const raw = document.getElementById('answer-input').value.trim();
+  // Block spam clicks or Enter key presses while checking or advancing
+  if (isTransitioning) return;
+
+  const inp = document.getElementById('answer-input');
+  const raw = inp.value.trim();
   if (!raw) return;
+
   const fb = document.getElementById('feedback');
   const btn = document.getElementById('submit-btn');
 
+  isTransitioning = true; // Lock immediately
   btn.disabled = true;
   btn.textContent = 'CHECKING...';
   fb.style.display = 'none';
@@ -446,18 +456,29 @@ async function checkAnswer() {
     if (res.status === 429) {
       fb.className = 'feedback wrong'; fb.style.display = 'block';
       fb.textContent = '✗ RATE LIMIT — too many attempts. Wait and retry.';
+      isTransitioning = false;
+      btn.disabled = false;
+      btn.textContent = 'RUN ▶';
       return;
     }
 
     const data = await res.json();
 
     if (data.correct) {
+      // Clear input & keep button locked during the 1.3s transition
+      inp.value = '';
+      btn.textContent = 'LOCKED ✓';
       fb.className = 'feedback right'; fb.style.display = 'block';
       fb.textContent = '✓ ACCEPTED — checkpoint cleared. Advancing...';
       const r = btn.getBoundingClientRect();
       burst(r.left + r.width / 2, r.top + r.height / 2, '#00ff88');
       
       setTimeout(() => {
+        //  UNLOCK RIGHT AS THE TRANSITION ENDS 
+        isTransitioning = false;
+        btn.disabled = false;
+        btn.textContent = 'RUN ▶';
+
         if (stage >= STAGES.length - 1) {
           finishGame();
         } else {
@@ -469,13 +490,18 @@ async function checkAnswer() {
       wrongs++;
       fb.className = 'feedback wrong'; fb.style.display = 'block';
       fb.textContent = wrongs >= 3 ? '✗ REJECTED — query your pair programmer below.' : '✗ REJECTED — re-examine the environment.';
-      const r = document.getElementById('answer-input').getBoundingClientRect();
+      const r = inp.getBoundingClientRect();
       burst(r.left + r.width / 2, r.top + r.height / 2, '#ff4466');
+      
+      // Unlock immediately so the player can try again
+      isTransitioning = false;
+      btn.disabled = false;
+      btn.textContent = 'RUN ▶';
     }
   } catch (e) {
     fb.className = 'feedback wrong'; fb.style.display = 'block';
     fb.textContent = '✗ SERVER UNREACHABLE — check your connection.';
-  } finally {
+    isTransitioning = false;
     btn.disabled = false;
     btn.textContent = 'RUN ▶';
   }
