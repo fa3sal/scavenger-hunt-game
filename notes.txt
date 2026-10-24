@@ -1,0 +1,3 @@
+ const SERVER = 'https://scavenger-hunt-game-production.up.railway.app';
+
+ Delete leaderboard.json to reset leaderboard (Auto-created if missing)

@@ -147,7 +147,7 @@ const url =
 });
 
 
-// ── Leaderboard (Saved to leaderboard.json) ──────────────────
+// ── Leaderboard (Saved to leaderboard.json (can delete file)) ──────────────────
 const LEADERBOARD_FILE = path.join(__dirname, 'leaderboard.json');
 
 function getLeaderboard() {
@@ -161,7 +161,7 @@ function getLeaderboard() {
   return [];
 }
 
-// GET /leaderboard → Returns top 10 fastest players
+// GET /leaderboard top 10 fastest players
 app.get('/leaderboard', (req, res) => {
   const board = getLeaderboard();
   res.json(board.slice(0, 10));
