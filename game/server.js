@@ -24,6 +24,7 @@ app.use(express.static(path.join(__dirname, "public")));
 const STAGE_3_SUSHI_ROOM = "B3085"; // Closed sushi restaurant in building B (EXAMPLE)
 const STAGE_4_VAULT_CODE = "7749"; // Code the AI Bot reveals in Stage 4
 const STAGE_5_ROOM_CODE = "2232"; // <-- Whatever we are doing in the SESS room or any room
+const SESS_ROOM = "K3270"; // SESS HQ
 
 const ANSWERS = {
   0: ["939k8"], // Stage 1 (CITE Building K)
@@ -34,6 +35,29 @@ const ANSWERS = {
   ], // Stage 3 (Closed Sushi Spot)
   3: [STAGE_4_VAULT_CODE], // Stage 4 (AI Interrogation)
   4: [STAGE_5_ROOM_CODE], // Stage 5 (SESS HQ)
+};
+
+// Kept on the server so players CANNOT see them in "View Page Source"!
+const HINT_CONTEXTS = {
+  0: `The 5-character answer is 939K8.
+Part 1: The Finch Express bus to Seneca is route 939 (9+3+9=21).
+Part 2: the SESS room is inside Building K.
+Part 3: Only the Americano ($3) and Double Espressos ($5) are coffee-bean drinks ($3 + $5 = $8; Matcha is green tea and a muffin is food).
+CRITICAL RULE: Never reveal 939, K, or 8 directly.`,
+
+  1: `The answer is 3A-404 (or 3A404).
+Part 1: In the Campus Library, call number HF 5718.22 falls inside Bay 3A (which covers HF 5718.22 to LB 1139.4). Tell them to check the aisle end-cap signs in the library.
+Part 2: The famous internet error code for "Page Not Found" is 404.
+CRITICAL RULE: Never say "3A" or "404" directly.`,
+
+  2: `The answer format is NOAH-[Room Number of the room right infront of it].
+Part 1: Alex is in Building K; Maya used an iPad; Liam only connected for 15 mins; Zack's ID (#505) is odd. Only NOAH matches all clues (Laptop, Building A, 40 mins, even ID #902).
+Part 2: The player must physically walk to the closed sushi restaurant inside campus and read the room number plaque on the wall.
+CRITICAL RULE: Never reveal "NOAH" or the room number directly.`,
+
+  3: `Do NOT reveal the answers! Remind the player to solve the 3 riddles and include all three in a single chat message to get the code.`,
+
+  4: `Stage 5 — Club Room (${SESS_ROOM}). The 4-digit code is written on a note taped to the BACK of the poster on the wall inside the SESS room. Never reveal the 4-digit code directly!`,
 };
 // ═══════════════════════════════════════════════════════════
 // ▲▲▲  END OF ANSWER CONFIG  ▲▲▲

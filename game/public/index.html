@@ -156,7 +156,6 @@ input[type="text"]::placeholder{color:var(--text3)}
     location     → physical campus location
     context      → "system log" narrative
     challenge    → puzzle text (\n = line break)
-    hint_context → private notes for AI hint bot
 
   ADD: copy a block, paste inside array
   REMOVE: delete the { ... } block
@@ -191,11 +190,6 @@ Combine the 3 answers below (no spaces):
 3. THE RECEIPT TRAP:
    "Yesterday I bought 1 Americano ($3), 2 Matcha Green Teas ($8), 1 Blueberry Muffin ($4), and 2 Double Espressos ($5)."
    Enter the total dollar amount spent STRICTLY on coffee-bean drinks.`,
-      hint_context: `The 5-character answer is 939K8.
-Part 1: The Finch Express bus to Seneca is route 939 (9+3+9=21).
-Part 2: the SESS room is inside Building K.
-Part 3: Only the Americano ($3) and Double Espressos ($5) are coffee-bean drinks ($3 + $5 = $8; Matcha is green tea and a muffin is food).
-CRITICAL RULE: Never reveal 939, K, or 8 directly.`
     },
     {
       icon: "📚",
@@ -212,10 +206,6 @@ Walk to the Campus Library in Building B and check the Shelf Bay range signs at 
 
 PART 2 — TECH RIDDLE (3-Digit Error Code):
 What famous 3-digit HTTP status code appears on the internet when a webpage or file is "Not Found"?`,
-      hint_context: `The answer is 3A-404 (or 3A404).
-Part 1: In the Campus Library, call number HF 5718.22 falls inside Bay 3A (which covers HF 5718.22 to LB 1139.4). Tell them to check the aisle end-cap signs in the library.
-Part 2: The famous internet error code for "Page Not Found" is 404.
-CRITICAL RULE: Never say "3A" or "404" directly.`
     },
     {
       icon: "🍣",
@@ -241,10 +231,6 @@ Cross-reference these 3 clues against the Wi-Fi log below:
 
 PART 2 — PHYSICAL LOCATION CHECK:
 Walk to the closed-down sushi restaurant inside Newnham Campus. Look at the room plaque CLOSEST to it and enter its exact Room Number (e.g. NOAH-B1000).`,
-      hint_context: `The answer format is NOAH-[Room Number of the room right infront of it].
-Part 1: Alex is in Building K; Maya used an iPad; Liam only connected for 15 mins; Zack's ID (#505) is odd. Only NOAH matches all clues (Laptop, Building A, 40 mins, even ID #902).
-Part 2: The player must physically walk to the closed sushi restaurant inside campus and read the room number plaque on the wall.
-CRITICAL RULE: Never reveal "NOAH" or the room number directly.`
     },
     {
       icon: "🤖",
@@ -265,7 +251,6 @@ Solve the 3 riddles below, then send ONE message into the AI Chat Box at the bot
    If A = 1, B = 2, C = 3 ... Z = 26, what is the sum of the three letters in the word "B U G"?
 
 Once VAULT_GUARD_AI replies with the 4-digit Vault Code in chat, type it into the answer box below!`,
-      hint_context: `Do NOT reveal the answers! Remind the player to solve the 3 riddles and include all three in a single chat message to get the code.`
     },
     {
       icon: "🚪",
@@ -281,7 +266,6 @@ You're inside SESS HQ. The final 4-digit access code is hidden behind something 
 Hint: Something decorative faces outward. The code faces inward.
 
 Enter the 4-digit code in front of the SESS Executives to stop your timer and lock in your Leaderboard rank!`,
-      hint_context: `Stage 5 — Club Room (${SESS_ROOM}). The 4-digit code is written on a note taped to the BACK of the poster on the wall inside the SESS room. Never reveal the 4-digit code directly!`
     }
   ];
   </script>
