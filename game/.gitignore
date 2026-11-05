@@ -1,2 +1,4 @@
 node_modules/
 .env
+game/.env
+game/node_modules/
